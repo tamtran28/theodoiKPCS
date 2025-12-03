@@ -1,8 +1,8 @@
 import streamlit as st
 from io import BytesIO
 
-from ocr_module import read_word, read_pdf, ocr_image, ocr_pdf, extract_kien_nghi
-from extract_module import create_excel, merge_kien_nghi
+from module.ocr_module import read_word, read_pdf, ocr_image, ocr_pdf, extract_kien_nghi
+from module.extract_module import create_excel, merge_kien_nghi
 
 st.set_page_config(page_title="Công cụ Kiến nghị Kiểm toán", layout="wide")
 
