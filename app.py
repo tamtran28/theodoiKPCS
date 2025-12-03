@@ -1,10 +1,11 @@
-# app.py
 import streamlit as st
-from module.ocr_module import read_word, read_pdf, ocr_image, ocr_pdf, extract_kien_nghi
-from module.extract_module import create_excel, merge_kien_nghi
-
-import streamlit as st
+import pandas as pd
 from io import BytesIO
+
+# IMPORT MODULES (bắt buộc phải đúng tên file)
+from module.pdf_module import pdf_to_tables
+from module.mapping_module import build_output_df
+from module.excel_module import save_to_excel
 
 
 st.set_page_config(page_title="Theo dõi KPCS", layout="wide")
@@ -14,6 +15,7 @@ tab_pdf, tab_excel = st.tabs([
     "📄 1. Tách bảng từ PDF",
     "📝 2. Map & Xuất Excel"
 ])
+
 
 # ===================== TAB 1 =========================
 with tab_pdf:
@@ -74,7 +76,7 @@ with tab_excel:
     st.subheader("🧩 Map bảng CHI TIẾT")
     map_detail = {
         "phat_hien_nn": st.selectbox("Phát hiện & Nguyên nhân", det_cols),
-        "anh_huong": st.selectbox("Ảnh hưởng", det_cols),
+        "anh_huong": st.selectbox("Ảnh hưởng (chi tiết)", det_cols),
         "kien_nghi": st.selectbox("Kiến nghị", det_cols),
         "y_kien": st.selectbox("Ý kiến đơn vị", det_cols),
     }
