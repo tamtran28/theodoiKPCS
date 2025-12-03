@@ -6,7 +6,7 @@ import openpyxl
 from openpyxl import Workbook, load_workbook
 from dateutil.relativedelta import relativedelta
 
-from extract_fields import extract_all_fields
+from module.extract_fields import extract_all_fields
 
 
 # ---- TÍNH THỜI HẠN HOÀN THÀNH = NGÀY BAN HÀNH + X THÁNG ----
