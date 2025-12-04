@@ -12,7 +12,7 @@ st.write(
     "- Tạo file kiến nghị từ báo cáo (DOCX / PDF / Ảnh, OCR tiếng Việt)\n"
     "- Import kiến nghị mới vào file KPCS chính\n"
     "- Tự động tính Thời hạn hoàn thành = Ngày ban hành + Mức độ ưu tiên (tháng)\n"
-    "- Cột 'Kiến nghị' chỉ lấy đoạn bắt đầu từ 'Đề nghị'"
+    "- Cột 'Kiến nghị' chỉ lấy đoạn bắt đầu từ 'Đề nghị'\n"
 )
 
 # =====================================================
@@ -30,18 +30,23 @@ doi_tuong = st.text_input("Đối tượng được KT:")
 so_van_ban = st.text_input("Số văn bản:")
 ngay_ban_hanh = st.text_input("Ngày, tháng, năm ban hành (mm/dd/yyyy):")
 
+
+# =====================================================
+# 🔥 XỬ LÝ FILE TẢI LÊN
+# =====================================================
+text = ""
+
 if uploaded:
     ext = uploaded.name.split(".")[-1].lower()
-    st.info("⏳ Đang xử lý báo cáo...")
-
-    text = ""
     file_bytes = uploaded.getvalue()
 
-    # ========== Ảnh ==========
+    st.info("⏳ Đang xử lý báo cáo...")
+
+    # ========= ẢNH =========
     if ext in ["jpg", "jpeg", "png"]:
         text = ocr_image(uploaded)
 
-    # ========== PDF ==========
+    # ========= PDF =========
     elif ext == "pdf":
         try:
             text_try = read_pdf(BytesIO(file_bytes))
@@ -49,23 +54,43 @@ if uploaded:
             text_try = ""
 
         if not text_try or len(text_try.strip()) < 20:
-            st.warning("PDF scan → OCR tiếng Việt...")
+            st.warning("PDF scan → OCR tiếng Việt…")
             text = ocr_pdf(file_bytes)
         else:
             text = text_try
 
-    # ========== DOCX ==========
-   elif ext == "docx":
-        tables = word_to_kiennghi(file)
+    # ========= WORD =========
+    elif ext == "docx":
+        st.info("📄 Đang trích bảng Word…")
+        try:
+            tables = word_to_kiennghi(uploaded)
+            text = ""
 
+            # Gộp toàn bộ nội dung các bảng thành text
+            for df in tables:
+                for col in df.columns:
+                    for val in df[col].astype(str):
+                        if val.strip():
+                            text += val + "\n"
 
+            if not text.strip():
+                st.error("❌ Không tìm thấy nội dung trong file Word.")
+            else:
+                st.success(f"📌 Đã trích được {len(tables)} bảng Word.")
 
+        except Exception as e:
+            st.error(f"Lỗi đọc Word: {e}")
+            text = ""
+
+    # HIỂN THỊ TEXT PREVIEW
     st.subheader("📌 Preview văn bản trích xuất")
-    st.text_area("Văn bản OCR:", text[:3000], height=250)
+    st.text_area("Văn bản OCR / Word:", text[:3000], height=250)
 
+    # TRÍCH KIẾN NGHỊ
     kien_nghi_list = extract_kien_nghi(text)
     st.success(f"🔍 Đã tìm được {len(kien_nghi_list)} kiến nghị.")
 
+    # TẠO EXCEL KIẾN NGHỊ
     if kien_nghi_list and st.button("📦 Tạo file Excel kiến nghị mới"):
         excel_file = create_excel(
             kien_nghi_list=kien_nghi_list,
