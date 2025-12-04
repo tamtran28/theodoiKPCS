@@ -3,6 +3,7 @@ from io import BytesIO
 
 from module.ocr_module import read_word, read_pdf, ocr_image, ocr_pdf, extract_kien_nghi
 from module.extract_module import create_excel, merge_kien_nghi
+from module.word_module import word_to_kiennghi
 
 st.set_page_config(page_title="Công cụ Kiến nghị Kiểm toán", layout="wide")
 
@@ -55,7 +56,8 @@ if uploaded:
 
     # ========== DOCX ==========
     elif ext == "docx":
-        text = read_word(uploaded)
+        tables = word_to_kiennghi(file)
+
 
     st.subheader("📌 Preview văn bản trích xuất")
     st.text_area("Văn bản OCR:", text[:3000], height=250)
