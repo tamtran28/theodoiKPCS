@@ -1,47 +1,76 @@
 from docx import Document
 import pandas as pd
 
-def word_to_tables(file):
-    """Trích bảng Word CHUẨN, xử lý được:
-       - merge ô
-       - nhiều dòng header
-       - dòng tiêu đề kiểu 'Chính sách, quy định…'
+
+def word_to_kiennghi(file):
     """
+    Đọc bảng Word CHI TIẾT PHÁT HIỆN KIỂM TOÁN đúng format:
+    - Lấy đúng header 5 cột
+    - Bỏ dòng 'Chính sách, quy định...'
+    - Bỏ dòng '1. ...' tiêu đề nhóm
+    - Ghép các đoạn văn trong cell thành 1 dòng
+    - Xử lý merge cell
+    """
+
     doc = Document(file)
     tables = []
 
     for tbl in doc.tables:
-        data = []
+        rows_out = []
+        max_cols = 0
 
+        # đọc toàn bộ cell
         for row in tbl.rows:
-            row_text = []
+            cells = []
             for cell in row.cells:
-                # lấy toàn bộ paragraph trong cell
-                txt = "\n".join([p.text.strip() for p in cell.paragraphs])
-                txt = txt.replace("\n", " ").strip()
-                row_text.append(txt)
+                text = " ".join([p.text.strip() for p in cell.paragraphs]).strip()
+                cells.append(text)
 
-            # bỏ dòng rỗng
-            if all(x == "" for x in row_text):
+            # bỏ dòng hoàn toàn rỗng
+            if all(c == "" for c in cells):
                 continue
 
-            data.append(row_text)
+            rows_out.append(cells)
+            max_cols = max(max_cols, len(cells))
 
-        # Nếu dòng đầu không phải header thật → bỏ
-        if len(data) < 2:
+        # chuẩn hóa số cột (bù thiếu do merge)
+        clean_rows = []
+        for r in rows_out:
+            while len(r) < max_cols:
+                r.append("")
+            clean_rows.append(r)
+
+        # tìm header thật (dòng có đủ 5 cột và chứa từ khóa)
+        header = None
+        for r in clean_rows:
+            join = " ".join(r).lower()
+            if "phát hiện" in join and "kiến nghị" in join:
+                header = r
+                break
+
+        if header is None:
             continue
 
-        # Chuẩn hóa header (lấy dòng dài nhất)
-        header = max(data[:3], key=lambda r: sum(len(c) for c in r))  
-        rows = data[data.index(header)+1:]
+        # lấy index header
+        header_idx = clean_rows.index(header)
 
-        # Trim cột rỗng
-        while len(header)>0 and header[-1] == "":
-            header = header[:-1]
-            for r in rows:
-                if len(r)>0: r.pop()
+        # bỏ phần trước header
+        data_rows = clean_rows[header_idx + 1:]
 
-        df = pd.DataFrame(rows, columns=header)
+        # loại bỏ dòng tiêu đề nhóm
+        filtered = []
+        for r in data_rows:
+            row_text = " ".join(r).lower()
+
+            if "chính sách" in row_text:
+                continue
+            if r[0].startswith("1.") or r[0].startswith("2.") or r[0].startswith("3."):
+                # đây là dòng nhóm
+                continue
+
+            filtered.append(r)
+
+        df = pd.DataFrame(filtered, columns=header)
         tables.append(df)
 
     return tables
