@@ -55,8 +55,9 @@ if uploaded:
             text = text_try
 
     # ========== DOCX ==========
-    elif ext == "docx":
+   elif ext == "docx":
         tables = word_to_kiennghi(file)
+
 
 
     st.subheader("📌 Preview văn bản trích xuất")
