@@ -1,47 +1,47 @@
-import pdfplumber
+from docx import Document
 import pandas as pd
 
-def clean_header(cols):
-    """Làm sạch header bị xuống dòng hoặc None."""
-    out = []
-    for c in cols:
-        if c is None:
-            out.append("")
-        else:
-            out.append(str(c).replace("\n", " ").strip())
-    return out
-
-
-def pdf_to_tables(file):
+def word_to_tables(file):
+    """Trích bảng Word CHUẨN, xử lý được:
+       - merge ô
+       - nhiều dòng header
+       - dòng tiêu đề kiểu 'Chính sách, quy định…'
+    """
+    doc = Document(file)
     tables = []
-    with pdfplumber.open(file) as pdf:
-        for page in pdf.pages:
-            raw_tables = page.extract_tables({
-                "vertical_strategy": "lines",
-                "horizontal_strategy": "lines",
-                "intersection_tolerance": 5
-            })
 
-            for tbl in raw_tables:
-                if not tbl or len(tbl) < 2:
-                    continue
+    for tbl in doc.tables:
+        data = []
 
-                header_raw = tbl[0]
-                header = clean_header(header_raw)
+        for row in tbl.rows:
+            row_text = []
+            for cell in row.cells:
+                # lấy toàn bộ paragraph trong cell
+                txt = "\n".join([p.text.strip() for p in cell.paragraphs])
+                txt = txt.replace("\n", " ").strip()
+                row_text.append(txt)
 
-                rows = tbl[1:]
+            # bỏ dòng rỗng
+            if all(x == "" for x in row_text):
+                continue
 
-                df = pd.DataFrame(rows, columns=header)
+            data.append(row_text)
 
-                # bỏ cột rỗng
-                df = df.loc[:, ~(df.columns == "")]
+        # Nếu dòng đầu không phải header thật → bỏ
+        if len(data) < 2:
+            continue
 
-                # bỏ dòng rác
-                df = df.dropna(how="all")
+        # Chuẩn hóa header (lấy dòng dài nhất)
+        header = max(data[:3], key=lambda r: sum(len(c) for c in r))  
+        rows = data[data.index(header)+1:]
 
-                if len(df.columns) < 2:
-                    continue
+        # Trim cột rỗng
+        while len(header)>0 and header[-1] == "":
+            header = header[:-1]
+            for r in rows:
+                if len(r)>0: r.pop()
 
-                tables.append(df)
+        df = pd.DataFrame(rows, columns=header)
+        tables.append(df)
 
     return tables
