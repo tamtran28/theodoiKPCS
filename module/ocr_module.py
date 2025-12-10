@@ -75,6 +75,7 @@ def extract_kien_nghi(text: str):
 
     return out
 
+
 # import pytesseract
 # import cv2
 # import numpy as np
