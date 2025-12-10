@@ -28,6 +28,7 @@ def extract_all_fields(text: str):
         "ngay_hoan_thanh": ngay_hoan_thanh,
     }
 
+
 # # extract_fields.py
 # import re
 
